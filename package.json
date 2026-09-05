@@ -1,0 +1,23 @@
+{
+  "name": "clockcassette",
+  "version": "0.1.0",
+  "description": "Record and replay Date.now, Math.random and setTimeout so nondeterministic code becomes reproducible in tests.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
+}
