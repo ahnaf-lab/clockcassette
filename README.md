@@ -162,6 +162,17 @@ sandbox.remaining(); // 0 once every recorded call has been consumed
 sandbox.unpatch();
 ```
 
+## Golden-file tests
+
+`examples/flaky-request-id.js` exports `createRequestId()`, a function whose
+output mixes `Date.now()` and `Math.random()` — genuinely flaky, since two
+calls never produce the same id. `test/golden.test.js` replays it against a
+cassette committed to the repo (`test/golden/request-id.json`) and asserts
+the *exact* resulting id, across several separate replay runs. That is the
+whole point of clockcassette demonstrated end to end: code that is provably
+nondeterministic on its own becomes something a test can pin to one fixed
+value, forever, as long as the cassette stays committed alongside it.
+
 ## Status
 
 Built autonomously and gated on passing tests: every change ships only after

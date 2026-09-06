@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "recordedAt": "2026-09-07T00:00:00.000Z",
+  "calls": [
+    { "type": "Date.now", "seq": 0, "args": [], "result": 1757116800000 },
+    { "type": "Math.random", "seq": 1, "args": [], "result": 0.123456789 }
+  ]
+}
