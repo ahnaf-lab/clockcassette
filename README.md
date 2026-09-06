@@ -5,11 +5,10 @@ A zero-dependency Node library that intercepts `Date.now`, `Math.random` and
 and replays that exact sequence later so nondeterministic code becomes
 reproducible in tests.
 
-This milestone adds the **player**: replaying a cassette feeds recorded values
-back to `Date.now`, `Math.random` and `setTimeout`, in the exact order they
-were recorded, and throws immediately if the code under test calls the wrong
-one, calls more than were recorded, or leaves recorded calls unconsumed. The
-`node:test` adapter is not built yet.
+This milestone adds the **cassette report**: a text summary of how many calls
+of each entropy source (`Date.now`, `Math.random`, `setTimeout`) a cassette
+holds, plus the `setTimeout` delay range and how many of its timers fired.
+The `node:test` adapter is not built yet.
 
 ## Install
 
@@ -72,6 +71,38 @@ If the code under replay calls the globals in a different order than they
 were recorded, calls more of them than the cassette has, or never calls some
 that were recorded, `replay` throws instead of returning a value that no
 longer matches what actually happened.
+
+`report` reads a cassette (by path, or an already-parsed object) and prints a
+text summary of what it recorded:
+
+```js
+import { report } from 'clockcassette';
+
+console.log(report('./cassettes/example.json'));
+```
+
+```
+clockcassette report
+recorded at: 2026-09-06T00:00:00.000Z
+total calls: 3
+entropy sources:
+  Date.now: 1
+  Math.random: 1
+  setTimeout: 1
+
+setTimeout detail:
+  fired: 1/1
+  delay range: 5ms - 5ms
+```
+
+`summarize` returns the same numbers as a plain object, for callers that want
+to check counts programmatically instead of parsing text:
+
+```js
+import { summarize } from 'clockcassette';
+
+const { total, byType } = summarize(cassette);
+```
 
 For lower-level control, the sandbox itself is exported too:
 
