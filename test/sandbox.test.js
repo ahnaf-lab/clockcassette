@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { patch, unpatch, getLog, isActive } from '../src/sandbox.js';
+import { patch, unpatch, getLog, isActive, patchReplay, remaining } from '../src/sandbox.js';
 
 test('patch replaces the globals and unpatch restores them exactly', () => {
   const originalNow = Date.now;
@@ -55,5 +55,41 @@ test('patched setTimeout still fires the real callback and is recorded', () => {
 test('patch refuses to run twice without an unpatch in between', () => {
   patch();
   assert.throws(() => patch(), /already patched/);
+  unpatch();
+});
+
+test('patchReplay feeds recorded values back in order', () => {
+  patchReplay([
+    { type: 'Date.now', seq: 0, args: [], result: 111 },
+    { type: 'Math.random', seq: 1, args: [], result: 0.42 },
+  ]);
+
+  assert.equal(Date.now(), 111);
+  assert.equal(Math.random(), 0.42);
+  assert.equal(remaining(), 0);
+  unpatch();
+});
+
+test('patchReplay throws on a type mismatch instead of returning a wrong value', () => {
+  patchReplay([{ type: 'Math.random', seq: 0, args: [], result: 0.5 }]);
+  assert.throws(() => Date.now(), /sequence mismatch/);
+  unpatch();
+});
+
+test('patchReplay throws once the cassette is exhausted', () => {
+  patchReplay([{ type: 'Date.now', seq: 0, args: [], result: 1 }]);
+  Date.now();
+  assert.throws(() => Date.now(), /exhausted/);
+  unpatch();
+});
+
+test('remaining() reports how many recorded calls are still unconsumed', () => {
+  patchReplay([
+    { type: 'Date.now', seq: 0, args: [], result: 1 },
+    { type: 'Date.now', seq: 1, args: [], result: 2 },
+  ]);
+  assert.equal(remaining(), 2);
+  Date.now();
+  assert.equal(remaining(), 1);
   unpatch();
 });
