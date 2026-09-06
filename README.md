@@ -5,10 +5,9 @@ A zero-dependency Node library that intercepts `Date.now`, `Math.random` and
 and replays that exact sequence later so nondeterministic code becomes
 reproducible in tests.
 
-This milestone adds the **cassette report**: a text summary of how many calls
-of each entropy source (`Date.now`, `Math.random`, `setTimeout`) a cassette
-holds, plus the `setTimeout` delay range and how many of its timers fired.
-The `node:test` adapter is not built yet.
+This milestone adds a **`node:test` adapter**: `useCassette` and
+`cassetteTest` wrap a test body so it auto-records the first time it runs and
+auto-replays every time after, including on CI.
 
 ## Install
 
@@ -103,6 +102,49 @@ import { summarize } from 'clockcassette';
 
 const { total, byType } = summarize(cassette);
 ```
+
+`cassetteTest` wraps `node:test`'s own `test()` so a test body runs under
+record/replay automatically — no explicit `cassettePath` needed, and no
+"record mode" flag to remember to flip back:
+
+```js
+import assert from 'node:assert/strict';
+import { cassetteTest } from 'clockcassette';
+
+cassetteTest('startedAt is a number', async () => {
+  const startedAt = Date.now();
+  assert.equal(typeof startedAt, 'number');
+});
+```
+
+The first time this test runs (on a developer machine, with no cassette file
+yet) it records real `Date.now`/`Math.random`/`setTimeout` calls to
+`cassettes/startedat-is-a-number.json`, derived from the test name. Once that
+file exists — commit it alongside the test — every later run, local or on
+CI, replays the same values instead of producing new ones.
+
+CI is detected from the standard `CI` environment variable (set by GitHub
+Actions, and most other CI providers, automatically). On CI, a missing
+cassette is a **hard error** instead of a silent recording: CI runs should
+never write new fixtures, only verify against ones already committed.
+
+`useCassette` is the lower-level function `cassetteTest` is built on, for
+callers who want record/replay behaviour without going through the test
+runner, or who want to pick the cassette path themselves:
+
+```js
+import { useCassette } from 'clockcassette';
+
+await useCassette(
+  'startedAt is a number',
+  async () => Date.now(),
+  { cassettePath: './cassettes/example.json' }
+);
+```
+
+Both accept `{ cassettePath }` (an exact file) or `{ cassetteDir }` (a
+directory to derive the filename in, from the test name); `{ ci: true|false }`
+overrides CI auto-detection for testing the adapter itself.
 
 For lower-level control, the sandbox itself is exported too:
 
